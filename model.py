@@ -197,13 +197,13 @@ def testFeature_1_2_7(gray_test_image, test_img, blur_test_img, denomination):
 
     print('Final Average SSIM list for each feature:','\n')
 
-    for x in range(len(avg_ssim_list)):
-        print('Feature',x+1,':',avg_ssim_list[x])
+    for x in range(len(best_extracted_img_list)):
+        print('Feature',x+1,':',best_extracted_img_list[x])
         
     results = []
-    for i, score in enumerate(avg_ssim_list):
+    for i, (img, score) in enumerate(best_extracted_img_list):
         status = "Pass" if score > 0.5 else "Fail"
-        results.append((max_score_img, score, status))
+        results.append((img, score, status))
 
     # Calculate average and max SSIM scores
     all_scores = avg_ssim_list
@@ -211,7 +211,7 @@ def testFeature_1_2_7(gray_test_image, test_img, blur_test_img, denomination):
     max_ssim = np.max(all_scores) if all_scores else 0.0
 
     # Return the results along with avg_ssim and max_ssim
-    return results, avg_ssim, max_ssim
+    return results, avg_ssim, max_ssim,avg_ssim_list, best_extracted_img_list
 
 def testFeature_8(image, denomination):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -290,7 +290,7 @@ def testFeature_8(image, denomination):
     # Storing the thresholded image and average number of bleed lines detected 
     global left_BL_result
     left_BL_result = [thresh, average_count]
-    return left_BL_result[1]
+    return left_BL_result
 
 def testFeature_9(image, denomination):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -298,6 +298,7 @@ def testFeature_9(image, denomination):
         crop = gray[90:230, 1140:1160]
     else:
         crop= gray[120:260, 1135:1155]
+
     _, thresh = cv2.threshold(crop, 130, 255, cv2.THRESH_BINARY)
 
     whitePixelValue = 255      # White pixel   
@@ -368,7 +369,7 @@ def testFeature_9(image, denomination):
     # Storing the thresholded image and average number of bleed lines detected 
     global right_BL_result
     right_BL_result = [thresh, average_count]
-    return right_BL_result[1]
+    return right_BL_result
 
 def testFeature_10(image, denomination):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -499,21 +500,8 @@ def testFeature_10(image, denomination):
     # Storing the thresholded image and the result
     global number_panel_result
     number_panel_result = [best_img, test_passed]
-    return number_panel_result[1]
+    return number_panel_result
 
-def analyze_features(image):
-    num_features = 7
-    results = []
-    
-    for i in range(num_features):
-        dummy_feature = image[50:150, 50 + i*50:100 + i*50]
-        ssim_score = np.random.uniform(0.3, 1.0)
-        status = "Pass" if ssim_score > 0.5 else "Fail"
-        results.append((dummy_feature, ssim_score, status))
-    
-    avg_ssim = np.mean([x[1] for x in results])
-    max_ssim = np.max([x[1] for x in results])
-    return results, avg_ssim, max_ssim
 
 st.title("Currency Note Authentication")
 denomination = st.selectbox("Select Denomination of Note", ["500", "2000"])
@@ -530,8 +518,9 @@ if uploaded_file is not None:
 
     st.subheader("Processing Image...")
     
-    results, avg_ssim, max_ssim =testFeature_1_2_7(gray_test_image, test_img, blur_test_img, denomination)
-    
+    results, avg_ssim, max_ssim, avg_ssim_list, best_extracted_img_list = testFeature_1_2_7(
+        gray_test_image, test_img, blur_test_img, denomination
+    )
     st.subheader("Results")
     st.write(f"**Number of authentic features:** {sum(1 for x in results if x[2] == 'Pass')}/7")
     st.write(f"**Average SSIM Score:** {avg_ssim:.2f}")
@@ -541,7 +530,10 @@ if uploaded_file is not None:
     for idx, (feature_img, ssim_score, status) in enumerate(results):
         col1, col2 = st.columns([1, 2])
         with col1:
-            st.image(feature_img, caption=f"Feature {idx+1}", use_column_width=True)
+            if isinstance(feature_img, np.ndarray) or isinstance(feature_img, str):
+                st.image(feature_img, caption=f"Feature {idx+1}", use_column_width=True)
+            else:
+                st.warning(f"Feature {idx+1} does not have a valid image.")
         with col2:
             st.write(f"**SSIM Score:** {ssim_score:.2f}")
             st.write(f"**Status:** {status}")
@@ -554,65 +546,46 @@ if uploaded_file is not None:
     number_panel = testFeature_10(image,denomination)
     
     
-    # st.image(left_bleed_lines, caption="Left Bleed Lines", use_column_width=True)
-    # st.image(right_bleed_lines, caption="Right Bleed Lines", use_column_width=True)
-    # st.image(number_panel, caption="Number Panel", use_column_width=True)
+    st.image(left_bleed_lines[0], caption="Left Bleed Lines", use_column_width=True)
+    st.image(right_bleed_lines[0], caption="Right Bleed Lines", use_column_width=True)
+    st.image(number_panel[0], caption="Number Panel", use_column_width=True)
     if (denomination == "2000"):
         min_ssim_score_list = [0.45, 0.4, 0.45, 0.45, 0.5, 0.4, 0.5]
     else:
         min_ssim_score_list = [0.4, 0.4, 0.5, 0.4, 0.5, 0.45, 0.5]
+    
     successful_features_count = 0
-    result_list = []
-    # Feature 1 to 7 analysis 
-    for i in range(NUM_OF_FEATURES):
-        avg_score = avg_ssim_list[i]
-        img, max_score = best_extracted_img_list[i]
-        min_allowed_score = min_ssim_score_list[i]
+    result_list = [] 
+    # Feature 1 to 7 analysis  
+    for i, (feature_img, ssim_score, status) in enumerate(results):
+        successful_features_count += 1 if status == "Pass" else 0
+        result_list.append((f"Feature {i+1}", status, ssim_score))
+
         
-        if avg_score >= min_allowed_score or max_score >= 0.79:
-            successful_features_count += 1
-            status = "Pass"
-        else:
-            status = "Fail"
-            
-        result_list.append((f"Feature {i+1}", status, avg_score))
     # Feature 8 - Left Bleed Lines
     img, line_count = left_BL_result
-    if denomination == "2000":
-        ll = 6.7
-        hl = 7.6
-    else:
-        ll = 4.7
-        hl = 5.6
-
-    if ll <= line_count <= hl:
-        successful_features_count += 1
-        status = "Pass"
-    else:
-        status = "Fail"
+    ll, hl = (6.7, 7.6) if denomination == "2000" else (4.7, 5.6)
+    status = "Pass" if ll <= line_count <= hl else "Fail"
+    successful_features_count += 2 if status == "Pass" else 0
     result_list.append(("Left Bleed Lines", status, line_count))
-    # Feature 9 - Right Bleed Lines  
+
     img, line_count = right_BL_result
-    if ll <= line_count <= hl:
-        successful_features_count += 1
-        status = "Pass"
-    else:
-        status = "Fail"
+    status = "Pass" if ll <= line_count <= hl else "Fail"
+    successful_features_count += 2 if status == "Pass" else 0
     result_list.append(("Right Bleed Lines", status, line_count))
+
     # Feature 10 - Number Panel
     img, number_panel_status = number_panel_result
-    if number_panel_status:
-        successful_features_count += 1
-        status = "Pass"
-    else:
-        status = "Fail"
-    result_list.append(("Number Panel", status, number_panel))
+    status = "Pass" if number_panel_status else "Fail"
+    successful_features_count += 2 if status == "Pass" else 0
+    result_list.append(("Number Panel", status, number_panel_status))
+
     # Display final results
     st.subheader("Authentication Result")
     
-    success_rate = (successful_features_count / 10) * 100
+    success_rate = (successful_features_count / 13) * 100
     
-    if success_rate >= 50:
+    if success_rate >= 70:
         st.success(f"Currency Note is AUTHENTIC ({success_rate:.1f}% features verified)")
     else:
         st.error(f"Currency Note appears to be FAKE ({success_rate:.1f}% features verified)")
