@@ -14,7 +14,7 @@
 - [License](#license)
 
 ## Introduction
-Counterfeit currency poses significant financial losses and security risks. As counterfeit techniques advance, traditional detection methods are insufficient. This project aims to develop an automated system using machine learning to accurately identify fake currency notes, thereby enhancing security and reducing losses.
+Fake currency poses significant financial losses and security risks. As counterfeit techniques advance, traditional detection methods are insufficient. This project aims to develop an automated system using machine learning to accurately identify fake currency notes, thereby enhancing security and reducing losses.
 
 ## Problem Statement
 Counterfeit currency in India leads to substantial financial losses and security threats. Manual detection is inefficient, and counterfeiters utilize advanced replication techniques. This project seeks to create an automated system that employs image processing and computer vision to verify the authenticity of Indian currency notes.
