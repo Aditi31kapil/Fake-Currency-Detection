@@ -78,6 +78,9 @@ The dataset comprises images of both real and counterfeit currency notes, struct
 ### Visual Representations
 - The system features a user-friendly graphical interface built using Streamlit, allowing users to upload currency images for analysis.
 - Real-time classification outputs indicate whether currency is genuine or counterfeit.
+- ![Output1](https://github.com/Aditi31kapil/Fake-Currency-Detection/blob/main/Screenshot%202025-03-26%20162912.png)
+- ![Output2](https://github.com/Aditi31kapil/Fake-Currency-Detection/blob/main/Screenshot%202025-03-26%20162926.png)
+- ![Output3](https://github.com/Aditi31kapil/Fake-Currency-Detection/blob/main/Screenshot%202025-03-26%20162944.png)
   
 ### Sample Images
 ![Real Currency](https://github.com/Aditi31kapil/Fake-Currency-Detection/blob/main/Dataset/500_dataset/500_s1.jpg)
